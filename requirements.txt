@@ -1,2 +1,6 @@
 fastapi
 uvicorn
+PyJWT
+SQLAlchemy
+psycopg2-binary
+redis

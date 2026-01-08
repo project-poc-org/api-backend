@@ -29,8 +29,9 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Set working directory
 WORKDIR /app
 
-# Copy application code
-COPY --chown=appuser:appuser . .
+# Copy application code (explicit files/dirs to avoid sensitive data)
+COPY --chown=appuser:appuser app/ ./app/
+COPY --chown=appuser:appuser main.py ./
 
 # Remove write permissions for security
 RUN chmod -R a-w /app

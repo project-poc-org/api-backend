@@ -1,0 +1,16 @@
+{
+    "repository": {
+        "repositoryArn": "arn:aws:ecr:us-east-1:761531548704:repository/api-backend",
+        "registryId": "761531548704",
+        "repositoryName": "api-backend",
+        "repositoryUri": "761531548704.dkr.ecr.us-east-1.amazonaws.com/api-backend",
+        "createdAt": "2026-01-08T20:14:31.412000+01:00",
+        "imageTagMutability": "MUTABLE",
+        "imageScanningConfiguration": {
+            "scanOnPush": true
+        },
+        "encryptionConfiguration": {
+            "encryptionType": "AES256"
+        }
+    }
+}

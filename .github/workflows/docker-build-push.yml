@@ -26,11 +26,7 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      AWS_ACCOUNT_ID:
-        required: true
       AWS_REGION:
-        required: true
-      ECR_REPOSITORY:
         required: true
 
 jobs:
@@ -57,26 +53,26 @@ jobs:
       - name: Build Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           APP_NAME: ${{ inputs.app-name }}
           APP_VERSION: ${{ inputs.app-version }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           echo "Building Docker image for $APP_NAME version $APP_VERSION..."
           docker build \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:$APP_VERSION \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:$APP_VERSION-$COMMIT_SHA \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:latest \
+            -t $ECR_REGISTRY/$APP_NAME:$APP_VERSION \
+            -t $ECR_REGISTRY/$APP_NAME:$APP_VERSION-${COMMIT_SHA:0:7} \
+            -t $ECR_REGISTRY/$APP_NAME:latest \
             -f ${{ inputs.dockerfile-path }} \
             ${{ inputs.build-context }}
           
-          echo "Image built successfully with tags: $APP_VERSION, $APP_VERSION-$COMMIT_SHA, latest"
-          docker images | grep $ECR_REPOSITORY/$APP_NAME
+          echo "✅ Image built successfully"
+          echo "Tags: $APP_VERSION, $APP_VERSION-${COMMIT_SHA:0:7}, latest"
+          docker images | grep "$ECR_REGISTRY/$APP_NAME"
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@0.31.0
         with:
-          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}/${{ inputs.app-name }}:${{ inputs.app-version }}
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.app-name }}:${{ inputs.app-version }}
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true
@@ -85,27 +81,27 @@ jobs:
       - name: Push Docker image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           APP_NAME: ${{ inputs.app-name }}
           APP_VERSION: ${{ inputs.app-version }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          echo "Pushing Docker images to ECR repository: $ECR_REPOSITORY/$APP_NAME"
+          echo "📦 Pushing Docker images to ECR repository: $APP_NAME"
           echo "Version: $APP_VERSION"
-          echo "Commit: $COMMIT_SHA"
+          echo "Commit: ${COMMIT_SHA:0:7}"
           
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:$APP_VERSION
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:$APP_VERSION-$COMMIT_SHA
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:latest
+          docker push $ECR_REGISTRY/$APP_NAME:$APP_VERSION
+          docker push $ECR_REGISTRY/$APP_NAME:$APP_VERSION-${COMMIT_SHA:0:7}
+          docker push $ECR_REGISTRY/$APP_NAME:latest
           
+          echo ""
           echo "✅ Images pushed successfully!"
-          echo "📦 Semantic Version: $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:$APP_VERSION"
-          echo "🔖 Commit Tag: $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:$APP_VERSION-$COMMIT_SHA"
-          echo "🏷️  Latest: $ECR_REGISTRY/$ECR_REPOSITORY/$APP_NAME:latest"
+          echo "📦 Semantic Version: $ECR_REGISTRY/$APP_NAME:$APP_VERSION"
+          echo "🔖 Commit Tag: $ECR_REGISTRY/$APP_NAME:$APP_VERSION-${COMMIT_SHA:0:7}"
+          echo "🏷️  Latest: $ECR_REGISTRY/$APP_NAME:latest"
 
       - name: Generate image metadata
         id: meta
         run: |
-          echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}/${{ inputs.app-name }}:${{ inputs.app-version }}" >> $GITHUB_OUTPUT
+          echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ inputs.app-name }}:${{ inputs.app-version }}" >> $GITHUB_OUTPUT
           echo "semantic-version=${{ inputs.app-version }}" >> $GITHUB_OUTPUT
-          echo "commit-tag=${{ inputs.app-version }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "commit-tag=${{ inputs.app-version }}-${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT

@@ -1,0 +1,30 @@
+# Default owner for everything in this repository
+* @jonathangarciaes
+
+# CI/CD Infrastructure (DevOps/SRE approval required)
+/.github/workflows/ @jonathangarciaes
+/Dockerfile @jonathangarciaes
+/.dockerignore @jonathangarciaes
+/scripts/ @jonathangarciaes
+
+# Release Management (requires approval for version changes)
+/VERSION @jonathangarciaes
+/CHANGELOG.md @jonathangarciaes
+/CONTRIBUTING.md @jonathangarciaes
+/BRANCHING.md @jonathangarciaes
+
+# Security-Critical Code (security review required)
+/app/auth.py @jonathangarciaes
+/app/settings.py @jonathangarciaes
+
+# Dependencies (security review for supply chain)
+requirements.txt @jonathangarciaes
+package.json @jonathangarciaes
+package-lock.json @jonathangarciaes
+
+# Documentation (flexible, anyone can contribute)
+*.md
+
+# Application Code (team-based ownership when team grows)
+/app/ @jonathangarciaes
+/src/ @jonathangarciaes

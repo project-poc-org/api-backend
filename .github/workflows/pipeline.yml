@@ -8,23 +8,67 @@ on:
   workflow_dispatch:
 
 jobs:
-  sonarqube:
+  build:
+    name: Build & Test
     runs-on:
       group: projects-poc
-      labels: [ project-runner]
+      labels: [self-hosted, ubuntu-22, project-runner]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests
+        run: |
+          # Add your test command here
+          echo "Tests would run here"
+  
+  security:
+    name: Security Scanning
+    runs-on:
+      group: projects-poc
+      labels: [self-hosted, ubuntu-22, project-runner]
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Checkov scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: all
+          soft_fail: true
+  
+  code-quality:
+    name: Code Quality Analysis
+    runs-on:
+      group: projects-poc
+      labels: [self-hosted, ubuntu-22, project-runner]
+    needs: build
     env:
       SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          fetch-depth: 0
+      
       - name: SonarQube Scan
         if: env.SONAR_HOST_URL != '' && env.SONAR_TOKEN != ''
         uses: SonarSource/sonarcloud-github-action@v2
@@ -33,10 +77,3 @@ jobs:
             -Dsonar.projectKey=api-backend
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
             -Dsonar.login=${{ env.SONAR_TOKEN }}
-      - name: Set version env
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "API_VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          else
-            echo "API_VERSION=dev-${GITHUB_RUN_ID}" >> $GITHUB_ENV
-          fi
